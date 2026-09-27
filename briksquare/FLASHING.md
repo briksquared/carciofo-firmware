@@ -17,6 +17,14 @@ tools). Flash one with the helper:
 
 ## The apps
 
+### nimbus  — Clouds granular (Mutable / Electro-Smith DSP)
+Fully wet. Audio in is recorded; audio out is the cloud. Not flashed yet.
+| P1 (+CV1) position | P2 size | P3 pitch ±2 oct | P4 see mode |
+| CV2 freeze gate | B1 cycle mode | B2 latch freeze |
+B1 modes: **granular** (P4 = density; clockwise half opens texture + reverb),
+**stretch** (P4 = filter), **looping delay** (P4 = feedback). LED colour follows
+mode; white = frozen. Panel LED stays dark until the WS2812 is reflowed.
+
 ### reverb  — stereo reverb + freeze + shimmer
 | P1 dry | P2 wet | P3(+CV1) decay | P4(+CV2) tone | B1 freeze | B2 shimmer(+oct) |
 
@@ -62,3 +70,37 @@ The panel WS2812 (on D5) is currently dark on this build of the module — every
 other I/O works (see HANDOFF.md). Apps that use the LED for readout (quattro,
 acciaio, hardware-test) still work fully; you just won't see the colour cues until
 the LED is reflowed.
+
+## Library wave, 2026-09-27 — linked, not flashed
+
+These are the apps added under `src/` after the original WGD set. Knob text
+is `PORTS.md`. Sizes, SDRAM, and the things that must not be “cleaned up”
+are `SESSION_2026_09_27_LIBRARY.md`. Same DFU address, `0x08000000`.
+
+| bin | bytes | bin | bytes |
+|---|---:|---|---:|
+| westcoast | 98020 | vosim | 95376 |
+| zosc | 96000 | grainlet | 95632 |
+| particle | 96908 | dust | 96276 |
+| modal | 97956 | elements | 99364 |
+| marbles | 95824 | soap | 98376 |
+| oscbank | 94656 | saw | 93884 |
+| fractal | 99360 | compress | 93048 |
+| stiff | 103036 | stages | 94776 |
+| blosc | 95668 | grids | 112024 |
+| moog | 96144 | comb | 93872 |
+| mode | 93552 | looper | 94072 |
+| grains | 96012 | polypluck | 94952 |
+| pluck | 94764 | fold | 91700 |
+| bits | 99972 | allpass | 92576 |
+| nlfilt | 93020 | jitter | 95132 |
+| ringsverb | 92748 | metal | 100408 |
+| splooge | 101900 | cloudseed | 129028 |
+| smoodge | 97596 | ringmod | 95220 |
+| vca | 91532 | | |
+
+`cloudseed` is 98.44% of the 128 KB bank and uses a 48-sample block.
+`fold` is not `folder`. `bits` is not `crush`. `ringsverb` is the plate,
+not `carciofo_rings`. Copies of the bins are in
+`hardware/daisy/SEED_READY/carciofo-official/` and are not part of this
+git repo.
