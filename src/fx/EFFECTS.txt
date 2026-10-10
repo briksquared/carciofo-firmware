@@ -1,0 +1,77 @@
+BRIKSQUARE CARCIOFO - "ALIA XL" MULTI-EFFECT - 64 EFFECTS
+
+Global controls (apply to every effect):
+  P1 = parameter A   (also modulated by CV1)
+  P2 = parameter B
+  P3 = parameter C   (also modulated by CV2)
+  P4 = dry / wet mix
+  B1 = tap: next effect   |   hold: jump to the next bank of 8
+  B2 = hold: FREEZE + full wet (infinite tail on delay/reverb/resonator types)
+  Onboard LED = heartbeat (alive), flash on B1 step, blinks bank number on B2-less bank jump, solid while frozen.
+
+NUM   NAME       PARAMETERS (P1 / P2 / P3)
+
+0     CHORUS     P1 depth / P2 rate / P3 feedback
+1     FLANGER    P1 depth / P2 rate / P3 feedback
+2     PHASER     P1 center frequency + depth / P2 rate / P3 feedback
+3     TREMOLO    P1 rate / P2 depth / P3 waveform (sine..square..ramp)
+4     AUTOWAH    P1 wah amount / P2 (unused) / P3 output level
+5     DRIVE      P1 overdrive amount / P2 (unused) / P3 (unused)
+6     FOLD       P1 fold gain / P2 offset / P3 (unused)
+7     CRUSH      P1 downsample amount / P2 bit depth / P3 (unused)
+8     LADDER     P1 cutoff / P2 resonance / P3 input drive
+9     SVFILT     P1 cutoff / P2 resonance / P3 mode (lowpass / bandpass / highpass)
+10    REVERB     P1 size & decay / P2 damping / P3 (unused)
+11    DELAY      P1 time / P2 feedback / P3 tone (feedback lowpass)
+12    PITCH      P1 transpose (-12..+12 semitones) / P2 texture ("fun") / P3 (unused)
+13    RING       P1 carrier frequency / P2 (unused) / P3 (unused)
+14    COMB       P1 length (pitch) / P2 feedback / P3 (unused)
+15    LOFI       P1 downsample / P2 bit depth / P3 lowpass tone
+16    GATE       P1 rate / P2 open width / P3 smoothing (hard..soft)
+17    WSHAPE     P1 drive / P2 asymmetry / P3 lowpass tone
+18    OCTAVE     P1 tone / P2 (unused) / P3 gain
+19    SOAP       P1 center frequency / P2 bandwidth / P3 mode (bandpass < 0.5, band-reject > 0.5)
+20    STIFF      P1 pitch / P2 nonlinearity / P3 brightness
+21    LIMIT      P1 pre-gain (how hard it limits) / P2 (unused) / P3 (unused)
+22    ALLPASS    P1 delay length / P2 feedback / P3 (unused)
+23    TONE       P1 cutoff / P2 mode (lowpass < 0.5, highpass > 0.5) / P3 (unused)
+24    CLIP       P1 drive (hard clip) / P2 (unused) / P3 (unused)
+25    RESON      P1 pitch / P2 feedback (resonance) / P3 damping
+26    COMBS      P1 root pitch / P2 feedback / P3 chord spread
+27    FORMANT    P1 vowel morph (A-E-I-O-U) / P2 resonance / P3 formant shift
+28    LPG        P1 response/decay / P2 base cutoff / P3 amount (how far the envelope opens it)
+29    VIBRATO    P1 rate / P2 depth / P3 (unused)
+30    ENSEMBL    P1 depth / P2 rate / P3 (unused)
+31    TAPE       P1 saturation drive / P2 wow depth / P3 tone
+32    STUTTER    P1 slice size / P2 freeze (> 0.5 holds the current slice) / P3 (unused)
+33    REVERSE    P1 chunk size / P2 (unused) / P3 (unused)
+34    DIFFUSE    P1 size / P2 diffusion amount / P3 (unused)
+35    SPRING     P1 size/time / P2 feedback / P3 (unused)
+36    FUZZ       P1 gain / P2 bias (asymmetry) / P3 tone
+37    RINGSWP    P1 center frequency / P2 sweep rate / P3 sweep depth
+38    PUMP       P1 rate / P2 depth / P3 curve/shape
+39    DRONE      P1 pitch / P2 feedback (toward self-oscillation) / P3 damping/tone
+40    HPF        P1 cutoff / P2 resonance / P3 (unused)
+41    PEAK       P1 frequency / P2 Q (width) / P3 gain (cut below center, boost above)
+42    NOTCH      P1 frequency / P2 Q (width) / P3 (unused)
+43    TILT       P1 tilt (dark <-> bright) / P2 crossover frequency / P3 (unused)
+44    SHIMMER    P1 decay/size / P2 shimmer amount (octave-up feedback) / P3 (unused)
+45    SPACE      P1 delay time / P2 delay feedback / P3 reverb size
+46    GRAIN      P1 grain size / P2 density / P3 pitch/speed
+47    ROTARY     P1 speed / P2 depth / P3 (unused)
+48    PWARP      P1 LFO rate / P2 pitch depth / P3 (unused)
+49    SWELL      P1 attack time (slower = bigger swell) / P2 release time / P3 (unused)
+50    NGATE      P1 threshold / P2 release / P3 (unused)
+51    SAT        P1 drive (tanh saturation) / P2 (unused) / P3 (unused)
+52    BITFOLD    P1 bit depth / P2 fold gain / P3 (unused)
+53    SNH        P1 rate (sample & hold step size) / P2 (unused) / P3 (unused)
+54    SLEW       P1 slew rate (lower = heavier/rounder) / P2 (unused) / P3 (unused)
+55    REZ        P1 cutoff / P2 resonance (high = self-oscillation) / P3 drive
+56    SUBOCT     P1 tone / P2 (unused) / P3 (unused)
+57    CHEBY      P1 drive / P2 harmonic blend (added 2nd/3rd/4th harmonics) / P3 (unused)
+58    KILLEQ     P1 low gain / P2 mid gain / P3 high gain (any band to 0 = kill)
+59    WOBBLE     P1 LFO rate / P2 depth / P3 resonance
+60    MULTITAP   P1 time / P2 feedback / P3 (unused)
+61    DUCKDLY    P1 time / P2 feedback / P3 duck depth (how far wet dips while you play)
+62    GRITVRB    P1 reverb size / P2 crush downsample / P3 bit depth
+63    RNDFILT    P1 step rate / P2 resonance / P3 frequency range
