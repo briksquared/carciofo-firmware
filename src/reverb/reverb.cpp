@@ -158,6 +158,13 @@ int main(void) {
     shimmerTarget = shimmering ? kShimmerSend : 0.f;
 
     UpdateLed(decay);
+
+    // Onboard Seed LED heartbeat (~2 Hz). The WS2812 pad is gone on this unit, so
+    // this is the visible proof-of-life; audio path is unaffected.
+    static uint32_t hbT = 0; static bool hbS = false;
+    uint32_t nowMs = System::GetNow();
+    if (nowMs - hbT >= 250) { hbT = nowMs; hbS = !hbS; hw.seed.SetLed(hbS); }
+
     System::Delay(1);
   }
 }
