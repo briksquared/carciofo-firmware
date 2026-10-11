@@ -82,13 +82,53 @@ static const FxInfo kFx[] = {
   {"DUCKDLY", 0.70f, 0.55f, 0.40f},  // 61 ducked delay
   {"GRITVRB", 0.60f, 0.70f, 0.60f},  // 62 crushed reverb
   {"RNDFILT", 0.95f, 0.40f, 0.85f},  // 63 random stepped filter
+  {"SLAP",    0.90f, 0.55f, 0.30f},  // 64 slapback delay
+  {"DUB",     0.80f, 0.45f, 0.35f},  // 65 dub delay (filtered feedback)
+  {"TAPEDLY", 0.85f, 0.60f, 0.40f},  // 66 tape echo (wow/flutter)
+  {"REVDLY",  0.75f, 0.35f, 0.90f},  // 67 reverse delay
+  {"OCTDLY",  1.00f, 0.55f, 0.75f},  // 68 octave-up delay
+  {"MODDLY",  0.45f, 0.70f, 1.00f},  // 69 modulated / chorus delay
+  {"PLATE",   0.55f, 0.80f, 0.90f},  // 70 plate reverb
+  {"GATEVB",  0.90f, 0.75f, 0.35f},  // 71 gated reverb
 };
 static const int kNumFx = (int)(sizeof(kFx) / sizeof(kFx[0]));
+
+// per-effect output trim (level-match: hot effects pulled down). Index = internal id.
+static const float kGain[] = {
+  0.90f,0.90f,0.90f,0.90f,0.70f,0.55f,0.50f,0.70f,0.70f,0.80f, // 0-9
+  0.80f,0.85f,0.85f,0.70f,0.60f,0.75f,0.90f,0.60f,0.60f,0.70f, // 10-19
+  0.50f,0.90f,0.80f,0.90f,0.50f,0.50f,0.50f,0.50f,0.85f,0.90f, // 20-29
+  0.80f,0.85f,0.85f,0.85f,0.80f,0.70f,0.50f,0.70f,0.90f,0.45f, // 30-39
+  0.85f,0.70f,0.85f,0.85f,0.70f,0.80f,0.80f,0.85f,0.85f,0.90f, // 40-49
+  0.90f,0.60f,0.55f,0.80f,0.90f,0.50f,0.60f,0.55f,0.70f,0.70f, // 50-59
+  0.80f,0.85f,0.70f,0.70f,0.85f,0.70f,0.80f,0.70f,0.70f,0.80f, // 60-69
+  0.75f,0.75f,                                                 // 70-71
+};
+// display order: 9 banks of 8, grouped by family. kOrder[slot] -> internal id.
+// B1 Delay | B2 Reverb | B3 Mod | B4 Filter | B5 Resonator | B6 Dist | B7 Lofi | B8 Rhythmic | B9 Pitch/util
+static const int kOrder[] = {
+  11,64,60,65,66,69,67,68,   // DELAY  SLAP MULTITAP DUB TAPEDLY MODDLY REVDLY OCTDLY
+  10,70,35,44,34,45,62,71,   // REVERB PLATE SPRING SHIMMER DIFFUSE SPACE GRITVRB GATEVB
+  0,1,2,3,29,30,47,48,       // CHORUS FLANGER PHASER TREMOLO VIBRATO ENSEMBL ROTARY PWARP
+  8,55,9,40,41,42,43,23,     // LADDER REZ SVFILT HPF PEAK NOTCH TILT TONE
+  25,26,39,20,14,27,19,59,   // RESON COMBS DRONE STIFF COMB FORMANT SOAP WOBBLE
+  5,36,24,17,6,51,57,18,     // DRIVE FUZZ CLIP WSHAPE FOLD SAT CHEBY OCTAVE
+  7,15,52,53,54,56,32,33,    // CRUSH LOFI BITFOLD SNH SLEW SUBOCT STUTTER REVERSE
+  16,38,4,28,13,37,46,63,    // GATE PUMP AUTOWAH LPG RING RINGSWP GRAIN RNDFILT
+  12,21,22,31,49,50,58,61,   // PITCH LIMIT ALLPASS TAPE SWELL NGATE KILLEQ DUCKDLY
+};
 
 static inline float clampf(float x, float lo, float hi){ return x < lo ? lo : (x > hi ? hi : x); }
 static inline float fracf(float x){ x -= (float)(long)x; return x < 0 ? x + 1.f : x; }
 static inline float sinf01(float p){ return sinf(6.2831853f * p); }
 static inline float mtof(float m){ return 440.f * powf(2.f, (m - 69.f) * (1.f / 12.f)); }
+// transparent below 0.7, soft-knee limit above -> output can never blast past ~1.0
+static inline float softlim(float x){
+  float a = x < 0.f ? -x : x;
+  if(a <= 0.7f) return x;
+  float s = x < 0.f ? -1.f : 1.f;
+  return s * (0.7f + 0.3f * tanhf((a - 0.7f) * 3.3333f));
+}
 
 static const int RVC_LEN[4] = {1116, 1188, 1277, 1356};
 static const int RVC_OFF[4] = {0, 1116, 2304, 3581};
@@ -133,7 +173,7 @@ class FxBank {
     ZeroAll();
   }
   void SetFreeze(bool f){ frozen_ = f; }
-  void SetFx(int i){ fx_ = i < 0 ? 0 : (i >= kNumFx ? kNumFx - 1 : i); }
+  void SetFx(int slot){ int s = slot < 0 ? 0 : (slot >= kNumFx ? kNumFx - 1 : slot); fx_ = kOrder[s]; }
   int  Fx() const { return fx_; }
   const FxInfo& Info() const { return kFx[fx_]; }
 
@@ -245,6 +285,14 @@ class FxBank {
                crush_.SetBitsToCrush((uint8_t)(2 + (int)((1.f - c) * 10.f))); break;
       case 63: rfPer_ = (int)clampf(400.f + (1.f - a) * 12000.f, 64.f, 48000.f);
                rfQ_ = 0.5f - b * 0.45f; rfRng_ = 1000.f + c * 5000.f; break;
+      case 64: slapTime_ = clampf((0.04f + a * 0.2f) * sr_, 1.f, (float)(kDelayMax - 1)); slapFb_ = b * 0.45f; break;
+      case 65: dubTime_ = clampf((0.1f + a * 0.5f) * sr_, 1.f, (float)(kDelayMax - 1)); dubFb_ = 0.3f + b * 0.65f; dubTone_ = 0.05f + c * 0.5f; break;
+      case 66: tdTime_ = clampf((0.08f + a * 0.5f) * sr_, 100.f, (float)(kDelayMax - 200)); tdFb_ = b * 0.7f; break;
+      case 67: rdLen_ = (int)clampf((0.1f + a * 0.5f) * sr_, 256.f, (float)(kRdN - 2)); rdFb_ = b * 0.6f; break;
+      case 68: octdTime_ = clampf((0.1f + a * 0.5f) * sr_, 1.f, (float)(kDelayMax - 1)); octdFb_ = b * 0.6f; shPitch_.SetTransposition(12.f); break;
+      case 69: mdTime_ = clampf((0.05f + a * 0.4f) * sr_, 100.f, (float)(kDelayMax - 400)); mdFb_ = b * 0.7f; mdRate_ = 0.1f + c * 4.f; break;
+      case 70: rvFb_ = 0.82f + a * 0.16f; rvDamp_ = 0.2f + b * 0.5f; break;
+      case 71: gvTime_ = (int)clampf((0.05f + a * 0.3f) * sr_, 100.f, 40000.f); gvThr_ = 0.02f + b * 0.3f; rvFb_ = 0.8f; rvDamp_ = 0.3f; break;
       default: break;
     }
     if(frozen_){                                   // B2: hold the tail at (near) unity feedback
@@ -253,13 +301,18 @@ class FxBank {
         case 14: combFb_ = 0.995f; break; case 25: rFb_ = 0.999f;  break;
         case 26: cmFb_ = 0.997f;  break; case 32: stFreeze_ = true; break;
         case 35: spFb_ = 0.97f;   break; case 39: dnFb_ = 1.0f;    break;
+        case 64: slapFb_ = 0.9f; break; case 65: dubFb_ = 0.99f; break;
+        case 66: tdFb_ = 0.99f;  break; case 67: rdFb_ = 0.95f;  break;
+        case 68: octdFb_ = 0.9f; break; case 69: mdFb_ = 0.99f;  break;
+        case 70: rvFb_ = 0.99f;  break; case 71: rvFb_ = 0.99f;  break;
         default: break;
       }
-      killIn_ = (fx_==10||fx_==11||fx_==14||fx_==25||fx_==26||fx_==35||fx_==39);
+      killIn_ = (fx_==10||fx_==11||fx_==14||fx_==25||fx_==26||fx_==35||fx_==39||fx_>=64);
     } else killIn_ = false;
   }
 
-  float Process(float in){
+  float Process(float in){ return softlim(ProcessRaw(in) * kGain[fx_]); }
+  float ProcessRaw(float in){
     float ki = killIn_ ? 0.f : 1.f;   // B2 freeze kills new input into feedback effects
     switch(fx_){
       case 0:  return chorus_.Process(in);
@@ -411,6 +464,24 @@ class FxBank {
                  float hz = 150.f + rfF_ * rfRng_;
                  float f = 2.f * sinf(3.14159265f * clampf(hz, 40.f, sr_ * 0.45f) / sr_);
                  rfLp_ += f * rfBp_; float hp = in - rfLp_ - rfQ_ * rfBp_; rfBp_ += f * hp; return rfBp_; }
+      case 64: { dl_.SetDelay(slapTime_); float rd = dl_.Read(); dl_.Write(in * ki + rd * slapFb_); return rd; }
+      case 65: { float rd = dl_.Read(dubTime_); dubHp_ += (rd - dubHp_) * 0.02f; float hp = rd - dubHp_;
+                 dubLp_ += (hp - dubLp_) * dubTone_; dl_.Write(in * ki + tanhf(dubLp_ * dubFb_)); return rd; }
+      case 66: { float wow = sinf01(tdWow_); tdWow_ = fracf(tdWow_ + 0.6f / sr_);
+                 float fl = sinf01(tdFl_); tdFl_ = fracf(tdFl_ + 5.5f / sr_);
+                 float rd = dl_.Read(tdTime_ + 40.f * wow + 8.f * fl); dl_.Write(in * ki + tanhf(rd * tdFb_)); return rd; }
+      case 67: { int rp = rdIdx_ - rdPh_; if(rp < 0) rp += kRdN; float y = rdbuf_[rp];
+                 rdbuf_[rdIdx_] = in * ki + y * rdFb_; if(++rdPh_ >= rdLen_) rdPh_ = 0;
+                 if(++rdIdx_ >= kRdN) rdIdx_ = 0; return y; }
+      case 68: { dl_.SetDelay(octdTime_); float rd = dl_.Read(); float sh = shPitch_.Process(rd);
+                 dl_.Write(in * ki + sh * octdFb_); return rd; }
+      case 69: { float lfo = sinf01(mdPh_); mdPh_ = fracf(mdPh_ + mdRate_ / sr_);
+                 float rd = dl_.Read(mdTime_ + mdDepth_ * lfo); dl_.Write(in * ki + rd * mdFb_); return rd; }
+      case 70: { float x = in * ki; x = apf(dbuf_[0], kDifN, di_[0], 142, 0.6f, x);
+                 x = apf(dbuf_[1], kDifN, di_[1], 379, 0.6f, x); return reverb(x); }
+      case 71: { float r = fabsf(in); if(r > gvThr_) gvHold_ = gvTime_; float w = reverb(in * ki);
+                 float g = gvHold_ > 0 ? 1.f : 0.f; if(gvHold_ > 0) gvHold_--;
+                 gvEnv_ += (g - gvEnv_) * 0.05f; return w * gvEnv_; }
       default: return in;
     }
   }
@@ -513,6 +584,15 @@ class FxBank {
   float mtTime_, mtFb_, mtLast_;
   float ddTime_, ddFb_, ddEnv_, ddDepth_;
   float rfLp_, rfBp_, rfF_, rfQ_, rfTarget_, rfRng_; int rfCnt_, rfPer_; uint32_t rfSeed_;
+  // ---- wave-5 state (more delays + reverbs) ----
+  float slapTime_, slapFb_;
+  float dubTime_, dubFb_, dubTone_, dubHp_, dubLp_;
+  float tdTime_, tdFb_, tdWow_, tdFl_;
+  static const int kRdN = 24000;
+  float rdbuf_[kRdN]; int rdIdx_, rdLen_, rdPh_; float rdFb_;
+  float octdTime_, octdFb_;
+  float mdTime_, mdFb_, mdDepth_, mdRate_, mdPh_;
+  int gvHold_, gvTime_; float gvThr_, gvEnv_;
 
   // ---- wave-2 buffers + state ----------------------------------------------
   static const int kBufN  = 2048;    // RESON / DRONE
@@ -588,6 +668,14 @@ class FxBank {
     ddTime_ = 12000.f; ddFb_ = 0.4f; ddEnv_ = 0.f; ddDepth_ = 0.8f;
     rfLp_ = rfBp_ = 0.f; rfF_ = 0.3f; rfQ_ = 0.2f; rfTarget_ = 0.3f; rfRng_ = 3000.f;
     rfCnt_ = 1; rfPer_ = 4000; rfSeed_ = 7u;
+    slapTime_ = 4000.f; slapFb_ = 0.3f;
+    dubTime_ = 12000.f; dubFb_ = 0.6f; dubTone_ = 0.3f; dubHp_ = dubLp_ = 0.f;
+    tdTime_ = 9000.f; tdFb_ = 0.4f; tdWow_ = tdFl_ = 0.f;
+    for(int i = 0; i < kRdN; i++) rdbuf_[i] = 0.f;
+    rdIdx_ = 0; rdLen_ = 12000; rdPh_ = 0; rdFb_ = 0.3f;
+    octdTime_ = 12000.f; octdFb_ = 0.4f;
+    mdTime_ = 6000.f; mdFb_ = 0.4f; mdDepth_ = 60.f; mdRate_ = 1.f; mdPh_ = 0.f;
+    gvHold_ = 0; gvTime_ = 6000; gvThr_ = 0.05f; gvEnv_ = 0.f;
   }
 
   float sr_;
